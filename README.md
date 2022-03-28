@@ -1,4 +1,4 @@
 # simple_pie_chart_D3.js
 <p align="center">
-<!--   <img src="https://github.com/ycl7199/simple_pie_chart_D3.js/blob/main/pic.jpg"> -->
+  <img src="https://github.com/ycl7199/simple_pie_chart_D3.js/blob/main/pic.jpg">
 </p>
