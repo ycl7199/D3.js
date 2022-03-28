@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+        
+
+<script src="https://d3js.org/d3.v7.js"></script>
+<style>
+  #my_dataviz{
+    height: auto;
+    width: auto;
+    float: left;
+
+}
+.data_discription_box{
+    height: 400px;
+    width: 35vw;
+    border:1px solid rgba(163, 215, 219, 0.555);
+    border-radius:10px;
+    margin:5px;
+    padding:50px;
+    background:rgb(205, 229, 235);
+    float: left; 
+};
+</style>
+<body>
+  <div class = 'float_item'>
+    <div id="my_dataviz" class="my_dataviz"></div>
+    <div class = 'data_discription_box'>
+      <font id = 'discription_title' face="monospace" size = '6'>各廠牌 COVID-19 疫苗接種人次</font><br>
+      <br>
+      <font id = 'discription_content' face="monospace" size = '5'>
+        &nbsp;&nbsp;&nbsp;&nbsp;covid-19疫苗由開始施打至2022年3/7日累積之各廠牌疫苗接種劑次，可以看出除了高端疫苗外其他三個廠牌的疫苗施打佔比相近
+        ，雖然台灣前期施打的疫苗皆為AZ，但是後期民間和政府購買大量的Mordena和BNT開始施打後佔比變得較為平衡。
+        由於需比較的廠牌較少且希望能夠明顯看出各廠牌疫苗施打劑量占比，因此將施打劑次占比轉換成對應角度以圓餅圖呈現。<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;由於詳細施打劑次數字較多直接在圓餅圖上呈現會造成閱讀不易，因此將圖表設計成在圓餅圖上一開始只會顯示所佔百分比
+        ，將滑鼠移動到對應區塊後才會浮出動態的文字框顯示實際施打劑次。
+      </font><br>
+      <br>
+      <font  id = 'discription_source' face="monospace" size = '4'>[數據來源: 衛福部疾管署]</font>
+    </div>
+  
+</body>
+
+<script>
+    const width = 500,
+        height = 500,
+        margin = 40;
+    
+    const radius = Math.min(width, height) / 2 - margin
+    
+    const svg = d3.select("#my_dataviz")
+      .append("svg")
+      .attr('class', 'pie')
+        .attr("width", width)
+        .attr("height", height)
+      .append("g")
+        .attr("transform", `translate(${width / 2}, ${height / 2})`);
+    
+    var data = {
+        'Moderna': 15503200,
+        '高端' : 2083167,
+        'BNT' : 15278193,
+        'AstraZeneca' : 15204274
+    };
+    var all = 48068834
+
+    const color = d3.scaleOrdinal()
+      .range(d3.schemeSet2);
+
+    const pie = d3.pie()
+      .value(function(d) {return d[1]})
+    const data_ready = pie(Object.entries(data))
+
+    const arcGenerator = d3.arc()
+      .innerRadius(0)
+      .outerRadius(radius)
+      .padAngle(.02)
+    
+    svg
+      .selectAll('mySlices')
+      .data(data_ready)
+      .join('path')
+        .attr('d', arcGenerator)
+        .attr('fill', function(d){ return(color(d.data[0])) })
+        .attr("stroke", "white")
+        .style("stroke-width", "2px")
+        .style("opacity", 0.7)
+        .on('mouseover', mouseover)
+        .on('mouseout', mouseout)
+    const tip = d3.select("#my_dataviz")
+        .append("div")
+        .style("opacity", 0)
+        .style('position', 'absolute')
+        .attr("class", "tip")
+        .style("background-color", "gray")
+        .style("border", "solid")
+        .style("border-width", "2px")
+        .style("border-radius", "5px")
+        .style("padding", "5px")
+    svg
+      .selectAll('mySlices')
+      .data(data_ready)
+      .join('text')
+      .text(function(d){ 
+            return d.data[0] + ':' + (d.data[1]/all*100).toFixed(1) + '%'
+        })
+      .attr("transform", function(d) { return `translate(${arcGenerator.centroid(d)})`})
+      .style("text-anchor", "middle")
+      .style("font-size", 17)
+
+      function mouseover(d, i){
+        d3.select(this)
+          .transition()
+          .duration(500)
+          .style("filter", "drop-shadow(2px 4px 6px black)")
+          .style('transform', 'scale(1.1)')
+        // console.log(i)
+        // console.log(d)
+
+        tip.transition()
+            .duration(200)
+            .style("opacity", 0.9);
+        tip.html("廠牌 : " + i.data[0] + "<br/>" +
+                "施打劑次 : " + i.data[1] + "<br/>")
+            .style("left", d.screenX  + "px")
+            .style("top", d.screenY + "px")
+            .style("opacity", 0.9)
+      }
+      function mouseout(d, i){
+            d3.select(this)
+                .transition()
+                .duration(200)
+                .style("filter", "drop-shadow(0 0 0 black)")
+                .style('transform', 'scale(1)')
+            tip.transition()
+            .style("opacity", 0)
+      }
+    </script>
