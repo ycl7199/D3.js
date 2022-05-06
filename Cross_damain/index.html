@@ -1,0 +1,289 @@
+
+<style>
+  .chart{
+    width: 800px;
+    min-width: 300px;
+    margin: auto;
+}
+  .btn {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 3px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+    margin: 2px 2px;
+    transition-duration: 0.4s;
+    cursor: pointer;
+    border-radius: 6px;
+  }
+
+  .btn1 {
+    background-color: white; 
+    color: black; 
+    border: 2px solid #4682B4;
+  }
+
+  .btn1:hover {
+    background-color: #4682B4;
+    color: white;
+  }
+  .chart {
+    background-color: #eefdff;
+  }
+  .contentBox {
+  width:70%;
+  margin: 5px 250px;
+  padding: 10px;
+  border: solid #c6dbef 1px;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  float: left;
+  color: "black";
+  text-align: center;
+  text-align-last: left;
+  font-size: 20px;
+  font-weight:bold;
+  }
+
+</style>
+
+<h4 align="center" class="mt-3">台灣 2021 11月 ~ 2022 2月 疫情及疫苗施打統計圖</h4>
+
+<div align="center" class="btnWrap" >
+  <button class="btn btn1 btn-primary Nov">2021 11月</button>
+  <button class="btn btn1 btn-primary Dec">2021 12月</button>
+  <button class="btn btn1 btn-primary Jan">2022 1月</button>
+  <button class="btn btn1 btn-primary Feb">2022 2月</button>
+</div>
+<div class="chart"></div>
+<h1 align="center" class="text-center fw-bold">每日新增確診數 vs 每日新增疫苗施打數</h1>
+<div class="contentBox">
+  <h3>資料說明</h3>
+  <h4>此資料表採用了衛生福利部 COVID-19全球疫情地圖上提供的台灣疫情報表API提供的raw data，從資料中提取出每日新增確診數以及每日新增疫苗施打數，
+    圖表中的y軸有兩種刻度，左方是每日新增之確診數，右方則是每日新增的確診數，x軸則是代表統計日期。
+    </h4>
+</div>
+<div class="contentBox">
+  <h3>設計說明</h3>
+  <h4>此圖表採用了兩個維度的資料，但兩種資料的量級差距極大，而圖表的目的主要是分析兩種資料的趨勢走向以及其相關性，
+    因此分別對兩種資料各自做了正規化，並在y軸方向顯示了兩種刻度分別在圖表的左右兩側。
+    </h4>
+  <h3>經驗法則</h3>
+  <h4>由於兩種資料需要精準的比較，不希望圖表深度造成視覺評估上的誤差，因此採用2D的圖表。且兩筆資料代表的是不同的內容，
+    因此分別採用直方圖以及折線圖加上兩種刻度來使圖表容易分辨兩筆資料的差異。另外考慮到資料數字較大不容易直接從圖表內容以及刻度直接判斷詳細數字，
+    所以在滑鼠移動到對應位置時對應的直方圖會變色並且顯示詳細數據。
+    規劃時也曾考慮使用圓餅圖或堆疊圖來實現圖表，但是圖表的目的是能夠辨別兩種數據的差異以及比較兩種資料的趨勢，
+    因此採用直方圖以及折線圖這兩種放在一起時還是能夠清楚分辨的圖表。
+    詳細數據的部分則是因為直接顯示的話會使圖表過於混亂因此設計成滑鼠游標經過時才會顯示詳細數據，
+    並用直方圖變色的方式幫助辨認是代表哪個統計日期的詳細數據。
+    </h4>
+  </div>
+  <div class='contentBox'>
+    <h3>結果分析</h3>
+    <h4>資料表中11~1月的資料無法看出兩種資料間的趨勢相關，推測的原因有統計期間的疫情緩和且多數人未施打過疫苗以及當時採用分批預約制所以無法明確反映出兩者之間的相關性。
+      考慮到現行的疫苗施打制度已經修改且疫情逐漸升溫，在未來一到兩個月的統計資料應該能更明顯的看出兩種資料間的關係。</h4>
+  </div>
+  <div class='contentBox'>
+    <h3>資料來源</h3>
+    <h4>https://covid-19.nchc.org.tw/index.php</h4>
+</div>
+
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+  d3.select('.Nov')
+    .on('click', function(){
+      getJson('2021-11-01', '2021-11-30')
+    })
+  d3.select('.Dec')
+    .on('click', function(){
+      getJson('2021-12-01', '2021-12-31')
+    })
+  d3.select('.Jan')
+    .on('click', function(){
+      getJson('2022-01-01', '2022-01-31')
+    })
+  d3.select('.Feb')
+    .on('click', function(){
+      getJson('2022-02-01', '2022-02-28')
+    })
+
+  function filter(start_date, end_date, data_obj) {
+    var s_date_arr = start_date.split('-');
+    var s_time = new Date(start_date)
+    var e_date_arr = end_date.split('-');
+    var e_time = new Date(end_date);
+    
+    var current_time = function(current_date){
+                        // var c_date = current_date.split('-');
+                        // var c_time = new Date(c_date[0], c_date[1], c_date[2])
+                        var c_time = new Date(current_date)
+                        return c_time
+                    };
+    var res_obj = {};
+    var res_x = [];
+    var res_x2 = [];
+    var res_y1 = [];
+    var res_y2 = [];
+    for (idx in data_obj){
+      var c_time = current_time(data_obj[idx].a04)
+      if(c_time >= s_time && c_time <= e_time){
+            var c_index = String(data_obj[idx].a04);//統計日期
+            c_index = c_index.split('-')[1] +'-'+ c_index.split('-')[2]
+            res_x.push(c_index)
+            res_obj[c_index] = {};
+            res_obj[c_index]['cases'] = data_obj[idx].a06;//新增確診數
+            res_y1.push(data_obj[idx].a06)
+            res_obj[c_index]['vac_count'] = data_obj[idx].a22;//新增疫苗接種數
+            res_y2.push(data_obj[idx].a22)
+            res_x2.push(c_index.split('-')[1])// date 
+        };
+    }
+    console.log(res_obj)
+    res_x = res_x.reverse()
+    res_y1 = res_y1.reverse()
+    res_y2 = res_y2.reverse()
+    res_x2 = res_x2.reverse()
+    return [res_x, res_y1, res_y2, res_x2,res_obj]
+  }
+  async function getJson(s_date, e_date) {
+    
+    dataGet = await d3.json('./data.json')
+    // console.log(dataGet)
+    console.log('data load completed')
+    res_data = filter(s_date, e_date, dataGet)
+    console.log(res_data)
+    drawBarChart(res_data);
+  }
+  
+  function drawBarChart(data){
+    
+    d3.select('.chart svg').remove();
+
+    const rwdSvgWidth = parseInt(d3.select('.chart').style('width')),
+          rwdSvgHeight = rwdSvgWidth*0.8,
+          margin = 40;
+
+    const svg = d3.select('.chart')
+                  .append('svg')
+                  .attr('width', rwdSvgWidth)
+                  .attr('height', rwdSvgHeight);
+
+    const xData = data[0]; // date
+    const yData = data[1].map(function (e){
+      return parseInt(e);
+    }); // confirm cases
+    const zData = data[2].map(function (e){
+      return parseInt(e);
+    }); // vaccine injection cases
+    const xScale = d3.scaleBand()
+                .domain(xData)
+                .range([margin*2, rwdSvgWidth - margin*1.2]) // 寬度
+                .padding(0.2)
+
+    const xAxis = d3.axisBottom(xScale)
+
+    const xAxisGroup = svg.append("g")
+                      .call(xAxis)
+                      .attr("transform", `translate(0,${rwdSvgHeight - margin})`)
+                      .selectAll("text") 
+                      .attr("transform", "translate(-10,0)rotate(-45)")
+                      .style("text-anchor", "end");
+
+    const yScale = d3.scaleLinear()
+                .domain([0, d3.max(yData)])
+                .range([rwdSvgHeight - margin, margin])
+                .nice() 
+    const yAxis = d3.axisLeft(yScale)
+                .ticks(5)
+                .tickSize(3)
+
+    const yAxisGroup = svg.append("g")
+                      .call(yAxis)
+                      .attr("transform", `translate(${margin*2},0)`)
+    const zScale =  d3.scaleLinear()
+                  .domain([0, d3.max(zData)])
+                  .range([rwdSvgHeight - margin, margin]) 
+                  .nice() 
+    const zAxis = d3.axisRight(zScale)
+                .ticks(5)
+                .tickSize(3)
+    const zAxisGroup = svg.append("g")
+                      .call(zAxis)
+                      .attr("transform", `translate(${rwdSvgWidth - margin*1.2},0)`)
+    
+    // console.log(data)
+    input_data = [];
+
+    data[0].forEach((e,index) => {
+      temp_arr = [e, data[1][index], data[2][index]]
+      input_data.push(temp_arr)
+    });
+    // console.log(data[2])
+    
+    //confirm cases data
+    const bar = svg.selectAll("rect")
+              .data(input_data)
+              .join("rect")
+              .attr("x", d => xScale(d[0])) 
+              .attr("y", d => yScale(parseInt(d[1])))
+              .attr("width", xScale.bandwidth())
+              .attr("height", d => {
+                  return (rwdSvgHeight - margin) - yScale(parseInt(d[1]))
+                })
+              .attr("fill", "#69b3a2")
+              .attr('cursor', 'pointer')
+              bar.on("mouseover", handleMouseOver)
+              .on("mouseleave", handleMouseLeave)
+
+    //vaccine injection cases data
+    const lineChart = d3.line()
+                  .x((d) => xScale(d[0])+10)
+                  .y((d) => zScale(parseInt(d[2])))
+    
+    const line = svg.append('path')
+                    .data(input_data)
+                    .attr("d", lineChart(input_data))
+                    .attr("fill", "none")
+                    .attr("stroke", "steelblue")
+                    .attr("stroke-width", 2.5)
+
+
+
+
+      bar.on("mouseover", handleMouseOver)
+        .on("mouseleave", handleMouseLeave)
+
+    function handleMouseOver(d, i){
+          // console.log(d)
+          // console.log(d.target.__data__)
+          d3.select(this)
+            .attr('fill', 'red')
+
+          svg.append('text')
+            .attr('class', 'infoText')
+            .attr('y', yScale(parseInt(d.target.__data__[1]))-20)
+            .attr("x", xScale(d.target.__data__[0]) + 50)
+            .style('fill', '#000')
+            .style('font-size', '18px')
+            .style('font-weight', 'bold')
+            .style("text-anchor", 'middle')
+            .text(d.target.__data__[1] + '人 '+ d.target.__data__[2] + '劑')
+        }
+
+    function handleMouseLeave(){
+      d3.select(this)
+        .attr('fill', '#69b3a2')
+
+      svg.select('.infoText').remove()
+    }
+
+  }
+  // data_path = './data.json'
+  // all_data = d3.json(data_path)
+  // console.log(all_data)
+</script>
